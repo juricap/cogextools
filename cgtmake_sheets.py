@@ -5,6 +5,7 @@ Peter Jurica (juricap@gmail.com), 2014
 cgtmake_sheets.py [-y] DIRECTORY
 
     -y           overwrite existing files
+    -nopdf       do not generate PDF files
     -c           combine
 
     DIRECTORY    folder containing SVG sheets (current directory is default)
@@ -27,8 +28,24 @@ OVER = False
 COMBINE = False
 DIR = '.'
 DIRNAME = 'Sheets'
-
-INKSCAPE = r"c:\Program Files (x86)\Inkscape\inkscape.exe"
+    
+INKSCAPE = 'C:\Program Files (x86)\Inkscape\inkscape.exe'
+if not os.path.exists(INKSCAPE):
+    print 'Inkscape application not found at "%s",'%INKSCAPE
+    while not os.path.exists(INKSCAPE):
+        print 'Please provide a valid path or press ENTER to select:',
+        INKSCAPE = raw_input()
+        if not INKSCAPE.strip():
+            INKSCAPE = askfile()
+    import re
+    code = open(__file__,'rb').read()
+    NEWINKSCAPE = "INKSCAPE = '%s'"%INKSCAPE
+    try:
+        exec NEWINKSCAPE
+        code = re.sub('^INKSCAPE = .*$',NEWINKSCAPE,code,1,re.M)
+        open(__file__,'wb').write(code)
+    except Exception as exc:
+        error('INKSCAPE path setting failed. Edit "cgtmake_sheets.py" and set variable manually.')
 
 ## parse input arguments
 if '-y' in sys.argv:
@@ -41,6 +58,7 @@ if '-nopdf' in sys.argv:
 
 if '-c' in sys.argv:
     COMBINE = True
+    PDFS = True
     sys.argv.pop(sys.argv.index('-c'))
 
 if len(sys.argv) > 1:
