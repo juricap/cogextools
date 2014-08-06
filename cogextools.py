@@ -184,7 +184,7 @@ def pressurec(a,p=4.0):
     from pylab import scatter, cm
     p = (a[:,5]/a[:,5].max())**p
     sz = 20*p
-    col = cm.jet(p)
+    col = cm.gray(p)
     return scatter(a[:,2],a[:,3],s=sz**2,c=col,edgecolors='none',alpha=0.25)
 
 def strokes(a,p=4.0,alpha=0.25,step=1):
