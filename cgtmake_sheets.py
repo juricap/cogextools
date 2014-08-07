@@ -28,26 +28,12 @@ OVER = False
 COMBINE = False
 DIR = '.'
 DIRNAME = 'Sheets'
-    
-INKSCAPE = 'C:\Program Files (x86)\Inkscape\inkscape.exe'
-if not os.path.exists(INKSCAPE):
-    print 'Inkscape application not found at "%s",'%INKSCAPE
-    while not os.path.exists(INKSCAPE):
-        print 'Please provide a valid path or press ENTER to select:',
-        INKSCAPE = raw_input()
-        if not INKSCAPE.strip():
-            INKSCAPE = askfile()
-    import re
-    code = open(__file__,'rb').read()
-    NEWINKSCAPE = "INKSCAPE = '%s'"%INKSCAPE
-    try:
-        exec NEWINKSCAPE
-        code = re.sub('^INKSCAPE = .*$',NEWINKSCAPE,code,1,re.M)
-        open(__file__,'wb').write(code)
-    except Exception as exc:
-        error('INKSCAPE path setting failed. Edit "cgtmake_sheets.py" and set variable manually.')
 
 ## parse input arguments
+if len(sys.argv) == 1 or '-h' in sys.argv:
+    print __doc__
+    sys.exit(0)
+
 if '-y' in sys.argv:
     OVER = True
     sys.argv.pop(sys.argv.index('-y'))
@@ -68,6 +54,24 @@ if len(sys.argv) > 1:
 if not os.path.isdir(DIR):
     print >>sys.stderr, 'ERROR: "%s" is not a directory!'%sys.argv[1]
     sys.exit(1)
+
+INKSCAPE = 'C:\Program Files (x86)\Inkscape\inkscape.exe'
+if not os.path.exists(INKSCAPE):
+    print 'Inkscape application not found at "%s",'%INKSCAPE
+    while not os.path.exists(INKSCAPE):
+        print 'Please provide a valid path or press ENTER to select:',
+        INKSCAPE = raw_input()
+        if not INKSCAPE.strip():
+            INKSCAPE = askfile()
+    import re
+    code = open(__file__,'rb').read()
+    NEWINKSCAPE = "INKSCAPE = '%s'"%INKSCAPE
+    try:
+        exec NEWINKSCAPE
+        code = re.sub('^INKSCAPE = .*$',NEWINKSCAPE,code,1,re.M)
+        open(__file__,'wb').write(code)
+    except Exception as exc:
+        error('INKSCAPE path setting failed. Edit "cgtmake_sheets.py" and set variable manually.')
 
 ## functions that do the work
 
@@ -94,14 +98,15 @@ def make_pdfs(files):
         pth = pjoin(pth,'pdfs')
         name = os.path.splitext(name)[0]
         makedirs(pth)
-        oname = '%s.pdf'%name
-        if not OVER and os.path.exists(oname):
+        oname = pjoin(DIR,'pdfs','%s.pdf'%name)
+        onames = pjoin(DIR,'pdfs','%s_solution.pdf'%name)
+        if not OVER and os.path.exists(oname) and os.path.exists(onames):
             continue
         tmpfd, temp = tempfile.mkstemp('.svg','cogex_')
         open(temp,'wb').write(open(x,'rb').read().replace('style="display:none"','style="display:inline"'))
         try:
-            pid1 = export(x,    pjoin(DIR,'pdfs','%s.pdf'%name))
-            pid2 = export(temp, pjoin(DIR,'pdfs','%s_solution.pdf'%name))
+            pid1 = export(x,    oname)
+            pid2 = export(temp, onames)
             pid1.wait()
             pid2.wait()
         except Exception as exc:
@@ -115,8 +120,9 @@ def make_pngs(files):
         pth = pjoin(pth,'pngs')
         name = os.path.splitext(name)[0]
         makedirs(pth)
-        oname = '%s.png'%name
-        if not OVER and os.path.exists(oname):
+        oname = pjoin(DIR,'pngs','%s.png'%name)
+        onames = pjoin(DIR,'pngs','%s_solution.png'%name)
+        if not OVER and os.path.exists(oname) and os.path.exists(onames):
             continue
         svg = open(x,'rb').read()
         svg = svg.replace('style="display:inline"','')
@@ -125,8 +131,8 @@ def make_pngs(files):
         tmpfd, temp = tempfile.mkstemp('.svg','cogex_')
         open(temp,'wb').write(svg)
         try:
-            pid1 = export(x,    pjoin(DIR,'pngs','%s.png'%name))
-            pid2 = export(temp, pjoin(DIR,'pngs','%s_solution.png'%name))
+            pid1 = export(x,    oname)
+            pid2 = export(temp, onames)
             pid1.wait()
             pid2.wait()
         except Exception as exc:
@@ -136,6 +142,7 @@ def make_pngs(files):
 
 def make_book(files,oname):
     from pyPdf import PdfFileWriter, PdfFileReader
+    print 'Generating PDF booklet.'
     output = PdfFileWriter()
     for x in files:
         print x
@@ -152,10 +159,10 @@ if PDFS:
     print 'Generating PDFs.'
     make_pdfs(files)
     if COMBINE:
-        files = [ pjoin(DIR,'pdfs',x) for x in os.listdir('pdfs') if x.endswith('.pdf') and 'solution' not in x ]
+        files = [ pjoin(DIR,'pdfs',x) for x in os.listdir(pjoin(DIR,'pdfs')) if x.endswith('.pdf') and 'solution' not in x ]
         files.sort()
         make_book(files,'%s.pdf'%DIRNAME)
-        files = [ pjoin(DIR,'pdfs',x) for x in os.listdir('pdfs') if x.endswith('_solution.pdf') ]
+        files = [ pjoin(DIR,'pdfs',x) for x in os.listdir(pjoin(DIR,'pdfs')) if x.endswith('_solution.pdf') ]
         files.sort()
         make_book(files,'%s_solution.pdf'%DIRNAME)
 
