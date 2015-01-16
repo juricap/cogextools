@@ -14,7 +14,7 @@ if '-w' in sys.argv:
     sys.argv.pop(sys.argv.index('-w'))
     WINDOW = True
 
-DIR = '.'
+DIR = 'sheets/ABSPCog'
 if len(sys.argv) > 1:
     DIR = sys.argv[1]
 
@@ -64,9 +64,9 @@ class TWin(window.Window):
         if s == key.D:
             self.DEBUG = not self.DEBUG
         elif s == key.RIGHT:
-            change_sheet(si+1)
+            self.change_sheet(si+1)
         elif s == key.LEFT:
-            change_sheet(si-1)
+            self.change_sheet(si-1)
         elif s == key.ESCAPE:
             app.exit()
     def on_mouse_drag(self,x,y,dx,dy,b,m):
@@ -97,9 +97,9 @@ class TWin(window.Window):
                     app.exit()
                 elif len(self.times) == 2:
                     if x > int(0.9*self.width):
-                        change_sheet(si+1)
+                        self.change_sheet(si+1)
                     elif x < int(0.1*self.width):
-                        change_sheet(si-1)
+                        self.change_sheet(si-1)
             else:
                 self.times = []
     def on_mouse_release(self,x,y,b,m):
@@ -123,6 +123,11 @@ class TWin(window.Window):
             ctx.stroke()
             refresh()
 
+    def change_sheet(self,i):
+        self.i = 0
+        self.data[...] = -10
+        change_sheet(i)
+
 def refresh():
     spr2.image = image.ImageData(win.width,win.height,'RGBA',path[:,:,[2,1,0,3]].tostring())
 
@@ -138,8 +143,8 @@ messages = remote_commands()
 def update(dt):
     if messages:
         msg = messages.pop()
-        if msg == 'next': change_sheet(si+1)
-        elif msg == 'prev': change_sheet(si-1)
+        if msg == 'next': self.change_sheet(si+1)
+        elif msg == 'prev': self.change_sheet(si-1)
         elif msg == 'quit': app.exit()
         elif msg == 'info': app.exit()
 
@@ -148,7 +153,7 @@ clock.schedule_interval(update,1/100.0)
 def load2spr(fname,batch=None):
     im = image.load(fname)
     spr = sprite.Sprite(im,batch=batch,usage='dynamic')
-    r = 1.0/min(float(im.width)/win.width,float(im.height)/win.height)
+    r = 1.0/max(float(im.width)/win.width,float(im.height)/win.height)
     spr.scale = r
     spr.x = (win.width - r*im.width)//2
     spr.y = (win.height - r*im.height)//2
@@ -192,6 +197,7 @@ def change_sheet(nsi):
         spr0.image = image.load(name+'.png')
         spr1.image = image.load(name+'_solution.png')
         path[...] = 0
+        arr[...] = 0
         refresh()
         record(os.path.split(name)[1])
 
